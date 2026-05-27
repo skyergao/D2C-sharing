@@ -187,9 +187,15 @@
     border-radius: 10px;
     box-shadow: 0 24px 80px oklch(0% 0 0 / 0.35);
     background: var(--paper);
-    transform: scale(var(--lightbox-scale, 1));
+    cursor: grab;
+    transform: translate3d(var(--lightbox-pan-x, 0px), var(--lightbox-pan-y, 0px), 0) scale(var(--lightbox-scale, 1));
     transform-origin: center center;
     transition: transform 0.12s ease-out;
+    user-select: none;
+  }
+  .image-lightbox.is-dragging img {
+    cursor: grabbing;
+    transition: none;
   }
   .lightbox-close {
     position: absolute;
@@ -1172,16 +1178,32 @@
 	    const lightbox = document.getElementById('image-lightbox');
 	    const lightboxImage = lightbox.querySelector('img');
 	    let lightboxScale = 1;
+	    let panX = 0;
+	    let panY = 0;
+	    let dragStartX = 0;
+	    let dragStartY = 0;
+	    let startPanX = 0;
+	    let startPanY = 0;
+	    let isDraggingImage = false;
+	    const setLightboxPan = (x, y) => {
+	      panX = x;
+	      panY = y;
+	      lightbox.style.setProperty('--lightbox-pan-x', `${panX}px`);
+	      lightbox.style.setProperty('--lightbox-pan-y', `${panY}px`);
+	    };
 	    const setLightboxScale = (scale) => {
 	      lightboxScale = Math.min(4, Math.max(1, scale));
 	      lightbox.style.setProperty('--lightbox-scale', lightboxScale.toFixed(2));
+	      if (lightboxScale <= 1) setLightboxPan(0, 0);
 	    };
 	    const closeLightbox = () => {
 	      lightbox.classList.remove('open');
+	      lightbox.classList.remove('is-dragging');
 	      lightbox.setAttribute('aria-hidden', 'true');
 	      lightboxImage.src = '';
 	      lightboxImage.alt = '';
 	      setLightboxScale(1);
+	      setLightboxPan(0, 0);
 	      document.body.classList.remove('lightbox-open');
 	    };
 
@@ -1192,6 +1214,7 @@
 	        lightboxImage.src = link.href;
 	        lightboxImage.alt = image ? image.alt : '';
 	        setLightboxScale(1);
+	        setLightboxPan(0, 0);
 	        lightbox.classList.add('open');
 	        lightbox.setAttribute('aria-hidden', 'false');
 	        document.body.classList.add('lightbox-open');
@@ -1204,6 +1227,36 @@
 	      const zoomStep = event.deltaY < 0 ? 0.14 : -0.14;
 	      setLightboxScale(lightboxScale + zoomStep);
 	    }, { passive: false });
+
+	    lightboxImage.addEventListener('pointerdown', (event) => {
+	      if (lightboxScale <= 1) return;
+	      event.preventDefault();
+	      isDraggingImage = true;
+	      dragStartX = event.clientX;
+	      dragStartY = event.clientY;
+	      startPanX = panX;
+	      startPanY = panY;
+	      lightbox.classList.add('is-dragging');
+	      lightboxImage.setPointerCapture(event.pointerId);
+	    });
+
+	    lightboxImage.addEventListener('pointermove', (event) => {
+	      if (!isDraggingImage) return;
+	      setLightboxPan(
+	        startPanX + event.clientX - dragStartX,
+	        startPanY + event.clientY - dragStartY
+	      );
+	    });
+
+	    lightboxImage.addEventListener('pointerup', () => {
+	      isDraggingImage = false;
+	      lightbox.classList.remove('is-dragging');
+	    });
+
+	    lightboxImage.addEventListener('pointercancel', () => {
+	      isDraggingImage = false;
+	      lightbox.classList.remove('is-dragging');
+	    });
 
 	    lightbox.addEventListener('click', (event) => {
 	      if (event.target === lightbox || event.target.closest('.lightbox-close')) {
