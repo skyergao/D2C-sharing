@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design to Code 工作流实践经验</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: oklch(18% 0.03 250);
+    --ink-2: oklch(35% 0.03 250);
+    --ink-3: oklch(52% 0.025 250);
+    --ink-4: oklch(68% 0.02 250);
+    --paper: oklch(97% 0.008 80);
+    --paper-2: oklch(93% 0.012 80);
+    --paper-3: oklch(89% 0.015 80);
+    --accent: oklch(62% 0.18 48);
+    --accent-light: oklch(90% 0.08 80);
+    --accent-2: oklch(52% 0.14 200);
+    --border: oklch(82% 0.015 80);
+    --green: oklch(55% 0.14 155);
+    --green-bg: oklch(93% 0.05 155);
+    --amber: oklch(72% 0.16 75);
+    --amber-bg: oklch(95% 0.06 80);
+    --red: oklch(55% 0.18 25);
+    --red-bg: oklch(95% 0.05 25);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.6;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── LAYOUT ── */
+  .page-wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 32px 120px;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    padding: 48px 0 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 64px;
+  }
+
+  h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(36px, 5vw, 56px);
+    line-height: 1.1;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+    max-width: 680px;
+  }
+  h1 em {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-style: normal;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--accent);
+  }
+
+  /* ── FORMULA BLOCK ── */
+  .formula-block {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 12px;
+    padding: 36px 40px;
+    margin: 48px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .formula-block::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: oklch(62% 0.18 48 / 0.12);
+  }
+  .formula-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: oklch(68% 0.02 80);
+    margin-bottom: 16px;
+  }
+  .formula-eq {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(17px, 2.5vw, 22px);
+    line-height: 1.5;
+    color: var(--paper);
+  }
+  .formula-eq-line {
+    display: block;
+    white-space: nowrap;
+  }
+  .formula-eq .hl { color: var(--accent); font-style: italic; }
+  .demo-video {
+    display: block;
+    width: 100%;
+    margin: 12px 0 24px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--ink);
+  }
+  .impact-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0 0 32px;
+  }
+  .impact-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    background: var(--paper);
+  }
+  .impact-value {
+    font-family: 'Instrument Serif', serif;
+    font-size: 42px;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .impact-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-2);
+    margin-bottom: 4px;
+  }
+  .impact-text {
+    font-size: 12px;
+    color: var(--ink-4);
+    line-height: 1.4;
+  }
+  .formula-chain {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid oklch(100% 0 0 / 0.1);
+    font-size: 12px;
+    color: oklch(68% 0.02 80);
+  }
+  .chain-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .chain-pill {
+    background: oklch(100% 0 0 / 0.08);
+    border: 1px solid oklch(100% 0 0 / 0.15);
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .chain-arrow { color: var(--accent); font-weight: 700; }
+
+  /* ── SECTION HEADERS ── */
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 64px 0 32px;
+  }
+  .section-number {
+    font-family: 'Instrument Serif', serif;
+    font-size: 16px;
+    color: var(--ink-4);
+    font-style: italic;
+    min-width: 22px;
+  }
+  h2 {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(22px, 3vw, 28px);
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+
+  /* ── PRIORITY TIER ── */
+  .tier {
+    margin-bottom: 12px;
+  }
+  .tier-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 4px;
+    margin-bottom: 24px;
+  }
+  .tier-label.t1 { background: var(--ink); color: var(--paper); }
+  .tier-label.t2 { background: var(--paper-2); color: var(--ink-2); border: 1px solid var(--border); }
+  .tier-label.t3 { background: var(--paper-2); color: var(--ink-3); border: 1px solid var(--border); }
+  .tier-label.t4 { background: var(--paper-2); color: var(--ink-4); border: 1px dashed var(--border); }
+
+  /* ── DIMENSION CARDS ── */
+  .dim-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    transition: box-shadow 0.2s;
+  }
+  .dim-card:hover { box-shadow: 0 4px 20px oklch(0% 0 0 / 0.06); }
+
+  .dim-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    background: var(--paper);
+  }
+  .dim-num {
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px;
+    font-style: italic;
+    color: var(--ink-4);
+    line-height: 1;
+    min-width: 28px;
+  }
+  .dim-title-wrap { flex: 1; }
+  .dim-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 2px;
+  }
+  .dim-subtitle {
+    font-size: 12px;
+    color: var(--ink-4);
+    font-weight: 400;
+  }
+  .dim-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .badge-critical { background: oklch(25% 0.05 25); color: oklch(85% 0.06 48); }
+  .badge-high { background: var(--paper-2); color: var(--ink-2); border: 1px solid var(--border); }
+  .badge-med { background: var(--paper-2); color: var(--ink-3); border: 1px solid var(--border); }
+  .badge-adv { background: var(--paper-2); color: var(--ink-4); border: 1px dashed var(--border); }
+
+  .dim-toggle {
+    display: none;
+  }
+
+  .dim-body {
+    display: block;
+    padding: 0 24px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--paper);
+  }
+
+  .dim-rules {
+    list-style: none;
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .dim-rules li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+  .dim-rules li.rule-medium {
+    font-weight: 500;
+  }
+  .dim-rules li::before {
+    content: '';
+    display: block;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: 7px;
+    flex-shrink: 0;
+  }
+  .dim-rules .sub-note {
+    margin-top: 6px;
+    padding: 10px 14px;
+    background: var(--paper-2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+    color: var(--ink-3);
+    line-height: 1.55;
+  }
+  .size-choice-guide {
+    width: 100%;
+  }
+  .size-choice-lead {
+    margin-bottom: 10px;
+  }
+  .size-choice-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .size-choice-card {
+    min-height: 92px;
+    padding: 12px 12px 11px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--paper-2);
+  }
+  .size-choice-name {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 7px;
+  }
+  .size-choice-example {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-2);
+    margin-bottom: 3px;
+  }
+  .size-choice-desc {
+    font-size: 12px;
+    color: var(--ink-3);
+    line-height: 1.45;
+  }
+  .case-figure {
+    margin-top: 12px;
+    width: 100%;
+  }
+  .case-figure--row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .case-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 130px;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+  }
+  strong.keyword {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  strong.keyword.keyword-soft {
+    font-weight: 400;
+  }
+  .rule-why {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    margin-top: 4px;
+  }
+  .code-tag {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    background: var(--paper-3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 5px;
+    color: var(--ink-2);
+  }
+  @media (max-width: 720px) {
+    .size-choice-grid {
+      grid-template-columns: 1fr;
+    }
+    .size-choice-card {
+      min-height: auto;
+    }
+    .case-figure--row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ── CHECKLIST ── */
+  .checklist-section {
+    margin-top: 64px;
+  }
+  .checklist-group {
+    margin-bottom: 32px;
+  }
+  .checklist-group-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .checklist-group-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .checklist-group-label.critical { color: var(--ink); }
+  .checklist-group-label.rec { color: var(--ink-3); }
+  .checklist-group-label.adv { color: var(--ink-4); }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 11px 14px;
+    border-radius: 7px;
+    margin-bottom: 4px;
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+  .check-item:hover { background: var(--paper-2); }
+  .check-item.done { opacity: 0.45; }
+  .check-item.done .check-text { text-decoration: line-through; color: var(--ink-4); }
+
+  .check-box {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+    background: var(--paper);
+  }
+  .check-item.done .check-box {
+    background: var(--green);
+    border-color: var(--green);
+  }
+  .check-box svg { display: none; }
+  .check-item.done .check-box svg { display: block; }
+
+  .check-text {
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.5;
+    flex: 1;
+  }
+  .check-text strong { color: var(--ink); font-weight: 600; }
+
+  /* progress bar */
+  .checklist-progress {
+    background: var(--paper-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .progress-bar-wrap { flex: 1; }
+  .progress-label {
+    font-size: 12px;
+    color: var(--ink-3);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .progress-bar {
+    height: 6px;
+    background: var(--paper-3);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 99px;
+    width: 0%;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .progress-count {
+    font-size: 28px;
+    font-family: 'Instrument Serif', serif;
+    color: var(--ink);
+    font-style: italic;
+    white-space: nowrap;
+  }
+  .progress-count small { font-size: 14px; color: var(--ink-4); font-style: normal; }
+
+  /* ── TOOL DIRECT ── */
+  .tool-direct {
+    margin-top: 24px;
+  }
+  .tool-map {
+    position: relative;
+    overflow: hidden;
+  }
+  .tool-map img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .tool-image-placeholder {
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: var(--ink-4);
+    font-size: 13px;
+    border: 1px dashed var(--border);
+    border-radius: 9px;
+  }
+  .tool-hotspot {
+    position: absolute;
+    display: block;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .tool-hotspot:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  /* ── FOOTER ── */
+  .doc-footer {
+    margin-top: 80px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--ink-4);
+  }
+  .footer-source a {
+    color: var(--ink-3);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .footer-source a:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* ── TOC ── */
+  .toc {
+    position: fixed;
+    top: 32px;
+    right: 32px;
+    width: 200px;
+    margin: 0;
+    padding: 16px 20px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--paper);
+    font-size: 12px;
+  }
+  .toc-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    margin-bottom: 10px;
+  }
+  .toc a {
+    display: block;
+    color: var(--ink-3);
+    text-decoration: none;
+    padding: 4px 0;
+    border-left: 2px solid transparent;
+    padding-left: 10px;
+    margin-left: -10px;
+    transition: color 0.15s, border-color 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover { color: var(--ink); border-left-color: var(--accent); }
+  @media (max-width: 1320px) { .toc { display: none; } }
+
+  /* ── MISC ── */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 48px 0;
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-in {
+    animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  @media (max-width: 640px) {
+    .page-wrap { padding: 0 20px 80px; }
+    .formula-block { padding: 24px 20px; }
+    .formula-eq-line { white-space: normal; }
+    .impact-metrics { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOC -->
+<nav class="toc" aria-label="目录">
+  <div class="toc-title">目录</div>
+  <a href="#formula">核心公式</a>
+  <a href="#dimensions">八大维度</a>
+  <a href="#checklist">必做清单</a>
+  <a href="#tools">工具直达</a>
+</nav>
+
+<div class="page-wrap">
+
+  <!-- HEADER -->
+  <header class="site-header animate-in">
+    <h1><em>Design to Code</em><br>工作流实践经验</h1>
+  </header>
+
+  <!-- FORMULA -->
+  <section id="formula">
+    <div class="section-header">
+      <span class="section-number">00</span>
+      <h2>效果预览</h2>
+    </div>
+    <video class="demo-video" controls preload="metadata" playsinline>
+      <source src="assets/2026-05-0600_14_35.mp4" type="video/mp4">
+      当前浏览器不支持视频播放。
+    </video>
+    <div class="impact-metrics" aria-label="D2C 效果数据">
+      <div class="impact-card">
+        <div class="impact-value">90%+</div>
+        <div class="impact-name">代码还原度</div>
+        <div class="impact-text">还原度达到 90% 以上，显著缩短设计到研发的交付周期。</div>
+      </div>
+      <div class="impact-card">
+        <div class="impact-value">70%+</div>
+        <div class="impact-name">交付提效</div>
+        <div class="impact-text">采用 D2C 方法后，C 类页面可压缩至 1 天完成交付。</div>
+      </div>
+    </div>
+    <div class="formula-block animate-in" style="animation-delay:0.1s">
+      <p class="formula-label">核心公式</p>
+      <p class="formula-eq">
+        <span class="formula-eq-line"><span class="hl">AI 友好的设计稿</span> = 工程化的节点分组方式 + 合理的样式赋值方式</span>
+        <span class="formula-eq-line">= 好的 DSL 结构 = 好的代码质量</span>
+      </p>
+      <div class="formula-chain">
+        <span>D2C 链路：</span>
+        <div class="chain-step"><span class="chain-pill">设计稿元数据</span><span class="chain-arrow">→</span></div>
+        <div class="chain-step"><span class="chain-pill">MCP 导出</span><span class="chain-arrow">→</span></div>
+        <div class="chain-step"><span class="chain-pill">DSL</span><span class="chain-arrow">→</span></div>
+        <div class="chain-step"><span class="chain-pill">LLM</span><span class="chain-arrow">→</span></div>
+        <div class="chain-step"><span class="chain-pill">前端代码</span></div>
+      </div>
+    </div>
+    <p style="font-size:13px; color:var(--ink-4); margin-top:-4px; margin-bottom:8px;">
+      设计稿规范化影响的是 <strong style="color:var(--ink-3)">DSL 质量</strong>，是最可控、收益最大的优化环节。
+    </p>
+  </section>
+
+  <!-- DIMENSIONS -->
+  <section id="dimensions" class="animate-in" style="animation-delay:0.15s">
+    <div class="section-header">
+      <span class="section-number">01</span>
+      <h2>八大维度</h2>
+    </div>
+
+    <!-- TIER 1 -->
+    <div class="tier">
+      <div class="tier-label t1">⬛ 第一层 · 最重要 — 直接决定代码结构能否正确生成</div>
+
+      <!-- DIM 1 -->
+      <div class="dim-card" data-id="dim1">
+        <div class="dim-header">
+          <span class="dim-num">1</span>
+          <div class="dim-title-wrap">
+            <div class="dim-title">Frame 替代 Group</div>
+            <div class="dim-subtitle">节点分组工程化 · 容器结构地基</div>
+          </div>
+          <span class="dim-badge badge-critical">必须</span>
+          <span class="dim-toggle">▾</span>
+        </div>
+        <div class="dim-body">
+          <ul class="dim-rules">
+            <li>
+              <div>
+                <strong class="keyword">必须用 Frame/容器分组，不用 Group</strong>
+                <div class="sub-note">Group 不在 DSL 中产生有效节点，无法映射为 <span class="code-tag">div</span>。AI 读取时 Group 相当于透明的，其子节点会被当作散落的平铺元素处理。</div>
+              </div>
+            </li>
+            <li>分组符合信息层级逻辑——相关元素成组（标题+副标题、图文卡片、按钮组）</li>
+            <li>分组符合排列顺序逻辑——同一行/同一列的元素分到一组</li>
+            <li class="rule-medium">减少不必要的嵌套层级，层级越清晰，代码生成质量越稳定</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- DIM 2 -->
+      <div class="dim-card" data-id="dim2">
+        <div class="dim-header">
+          <span class="dim-num">2</span>
+          <div class="dim-title-wrap">
+            <div class="dim-title">自动布局（Auto Layout）</div>
+            <div class="dim-subtitle">间距结构化 · 盒模型映射</div>
+          </div>
+          <span class="dim-badge badge-critical">必须</span>
+          <span class="dim-toggle">▾</span>
+        </div>
+        <div class="dim-body">
+          <ul class="dim-rules">
+            <li><strong class="keyword">规律排列的容器必须启用自动布局</strong>——不启用时会退回绝对定位，无法读取元素之间的排列关系</li>
+            <li>
+              <div>
+                <strong class="keyword keyword-soft">同一父容器子节点只能同一方向</strong>（横排或竖排，不混用）
+                <div class="sub-note">一个 flex 容器只有一个方向。横竖混排时，需新建一个子容器来承载横向的部分，再放进竖排的父容器——多一层嵌套换来结构清晰。</div>
+              </div>
+            </li>
+            <li>
+              <div>
+                <strong class="keyword">元素之间用自动布局间距，容器留白用内边距</strong>——在 Figma/MasterGo 的自动布局面板设置，别靠手动拖拽凑间距
+                <figure class="case-figure case-figure--row" aria-label="自动布局间距与内边距案例">
+                  <img src="assets/padding-wrong@2x.png" alt="错误示例：通过位置留出距离">
+                  <img src="assets/padding-right@2x.png" alt="正确示例：通过自动布局添加内边距">
+                </figure>
+              </div>
+            </li>
+            <li>
+              <div class="size-choice-guide">
+                <div class="size-choice-lead">
+                  <strong class="keyword keyword-soft">不要随手拉成固定宽高</strong>——先判断尺寸由谁决定：内容、容器，还是元素本身
+                </div>
+                <div class="size-choice-grid" aria-label="尺寸语义选择示例">
+                  <div class="size-choice-card">
+                    <div class="size-choice-name">Hug</div>
+                    <div class="size-choice-example">按钮、标签、价格胶囊</div>
+                    <div class="size-choice-desc">内容变长，外框跟着变长</div>
+                  </div>
+                  <div class="size-choice-card">
+                    <div class="size-choice-name">Fill</div>
+                    <div class="size-choice-example">搜索框、列表卡片、底部按钮</div>
+                    <div class="size-choice-desc">跟随父容器撑满可用空间</div>
+                  </div>
+                  <div class="size-choice-card">
+                    <div class="size-choice-name">Fixed</div>
+                    <div class="size-choice-example">头像、商品图、固定图标</div>
+                    <div class="size-choice-desc">尺寸必须稳定时才锁定宽高</div>
+                  </div>
+                </div>
+              </div>
+            </li>
+            <li><strong class="keyword">绝对定位只用于特殊覆盖场景</strong>——如悬浮按钮、吸顶栏、角标、元素溢出露出等，不用于常规列表和卡片排版</li>
+            <li><strong class="keyword">需要滚动的容器设置「裁剪超出内容」</strong>——定义滚动边界，代码才能生成 <span class="code-tag">overflow: scroll</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIER 2 -->
+    <div class="tier">
+      <div class="tier-label t2">▪ 第二层 · 重要 — 影响样式还原质量</div>
+
+      <!-- DIM 3 -->
+      <div class="dim-card" data-id="dim3">
+        <div class="dim-header">
+          <span class="dim-num">3</span>
+          <div class="dim-title-wrap">
+            <div class="dim-title">样式集中到主体图层</div>
+            <div class="dim-subtitle">样式赋值单元化 · 避免多层叠加</div>
+          </div>
+          <span class="dim-badge badge-high">推荐</span>
+          <span class="dim-toggle">▾</span>
+        </div>
+        <div class="dim-body">
+          <ul class="dim-rules">
+            <li>填充色、边框、阴影等<strong class="keyword">直接赋给主体节点</strong>，不分散到蒙层/叠层——多节点叠加样式会导出冗余节点，产生布局错位</li>
+            <li>
+              <div>
+                <strong class="keyword">背景图用容器的"填充"属性</strong>，不用额外图片节点 → 映射为 CSS <span class="code-tag">background-image</span>
+                <figure class="case-figure case-figure--row" aria-label="背景图填充属性案例">
+                  <img src="assets/wrong@2x.png" alt="错误示例：背景包含多图层或多样式">
+                  <img src="assets/right@2x.png" alt="正确示例：背景以父容器样式填充">
+                </figure>
+              </div>
+            </li>
+            <li>图片裁切用<strong class="keyword">容器 + 「裁剪超出内容」</strong>代替蒙版——蒙版会增加节点层级</li>
+            <li>分割线用<strong class="keyword">容器边框描边</strong>，不用矩形节点——减少无意义节点</li>
+            <li>文本溢出用<strong class="keyword">缩略属性</strong>，不手动输入"..."——AI 无法将手动省略号识别为溢出逻辑</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- DIM 4 -->
+      <div class="dim-card" data-id="dim4">
+        <div class="dim-header">
+          <span class="dim-num">4</span>
+          <div class="dim-title-wrap">
+            <div class="dim-title">Design Token 绑定</div>
+            <div class="dim-subtitle">样式变量化 · 设计与代码直接映射</div>
+          </div>
+          <span class="dim-badge badge-high">推荐</span>
+          <span class="dim-toggle">▾</span>
+        </div>
+        <div class="dim-body">
+          <ul class="dim-rules">
+            <li><strong class="keyword">颜色绑定 Color Token</strong>，不裸写色值——Token 与代码变量一一对应，AI 可直接关联而非猜测</li>
+            <li><strong class="keyword">文字样式绑定 Text Style</strong>（字号 / 字重 / 行高）——优先级最高，避免 LLM 反推字体属性</li>
+            <li>间距、圆角绑定 Spacing / Radius Token——保证数值的语义清晰</li>
+            <li>阴影绑定 Effect Style</li>
+            <li>量化目标：<strong class="keyword">> 80% 的样式来自 Token</strong>（Token 覆盖率是可量化的质量 KPI）</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIER 3 -->
+    <div class="tier">
+      <div class="tier-label t3">· 第三层 · 语义质量 — 低成本提升 AI 理解准确性</div>
+
+      <!-- DIM 5 -->
+      <div class="dim-card" data-id="dim5">
+        <div class="dim-header">
+          <span class="dim-num">5</span>
+          <div class="dim-title-wrap">
+            <div class="dim-title">图层英文语义命名</div>
+            <div class="dim-subtitle">视觉还原影响小，代码可维护性影响大</div>
+          </div>
+          <span class="dim-badge badge-med">场景适用</span>
+          <span class="dim-toggle">▾</span>
+        </div>
+        <div class="dim-body">
+          <ul class="dim-rules">
+            <li>
+              <div>
+                <strong class="keyword">普通页面设计稿</strong>：命名对视觉还原影响可忽略，LLM 会主动整理命名，但好的命名影响生成代码的 class 名，提升可维护性
+              </div>
+            </li>
+            <li>
+              <div>
+                <strong class="keyword">组件库场景</strong>：命名极关键，必须遵循三层格式：
+                <div class="sub-note"><span class="code-tag">ComponentName/Variant/State</span> 示例：<span class="code-tag">Button/Primary/Default</span>、<span class="code-tag">Card/Elevated</span>、<span class="code-tag">Tag/Outline</span><br>这决定 AI 能否零误差调取标准组件，实现设计-代码精准匹配。</div>
+              </div>
+            </li>
+            <li>一级、二级子节点使用英文业务/功能语义命名；交互状态用 <span class="code-tag">ComponentName - State</span> 格式</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- DIM 6 -->
+      <div class="dim-card" data-id="dim6">
+        <div class="dim-header">
+          <span class="dim-num">6</span>
+          <div class="dim-title-wrap">
+            <div class="dim-title">文件清理 + 状态标记</div>
+            <div class="dim-subtitle">防止脏数据进入 DSL</div>
+          </div>
+          <span class="dim-badge badge-med">推荐</span>
+          <span class="dim-toggle">▾</span>
+        </div>
+        <div class="dim-body">
+          <ul class="dim-rules">
+            <li>交付前<strong class="keyword">删除所有隐藏图层</strong>和透明度 0% 的图层——防止 DSL 混入无效节点</li>
+            <li>清理冗余样式（移除未启用的隐藏阴影等）</li>
+            <li><strong class="keyword">交付前标记"可交付"状态（Ready for Dev）</strong>——防止 AI 处理未完成的设计，降低脏数据进入 DSL 的概率</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIER 4 -->
+    <div class="tier">
+      <div class="tier-label t4">◌ 第四层 · 进阶 — 设计与代码的长期桥接</div>
+
+      <!-- DIM 7 -->
+      <div class="dim-card" data-id="dim7">
+        <div class="dim-header">
+          <span class="dim-num">7</span>
+          <div class="dim-title-wrap">
+            <div class="dim-title">组件-代码映射</div>
+            <div class="dim-subtitle">Code Connect · 引用已有代码库而非生成新代码</div>
+          </div>
+          <span class="dim-badge badge-adv">进阶</span>
+          <span class="dim-toggle">▾</span>
+        </div>
+        <div class="dim-body">
+          <ul class="dim-rules">
+            <li>使用<strong class="keyword">标准组件实例</strong>，不拆散组件、不手改内部结构——保证组件语义完整</li>
+            <li>D2C 前确认所有元素为标准实例</li>
+            <li><strong class="keyword">Code Connect 机制</strong>：在组件上标注对应的真实代码组件路径，AI 可直接引用代码库而非生成新代码</li>
+            <li>链接 Dev Resources（Storybook、GitHub 仓库、组件文档）</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- DIM 8 -->
+      <div class="dim-card" data-id="dim8">
+        <div class="dim-header">
+          <span class="dim-num">8</span>
+          <div class="dim-title-wrap">
+            <div class="dim-title">交互与行为标注</div>
+            <div class="dim-subtitle">超越视觉还原 · 传递设计意图</div>
+          </div>
+          <span class="dim-badge badge-adv">进阶</span>
+          <span class="dim-toggle">▾</span>
+        </div>
+        <div class="dim-body">
+          <ul class="dim-rules">
+            <li>标注<strong class="keyword">交互状态跳转关系</strong>（悬停 → 点击 → 禁用）</li>
+            <li>标记<strong class="keyword">动态数据字段</strong>——哪些内容来自接口，哪些是静态文案</li>
+            <li>标注滚动方向、动画类型</li>
+            <li class="sub-note" style="list-style:none;">注：当前 D2C 主要聚焦视觉还原，此维度是下一步完整化 D2C 的扩展方向。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- CHECKLIST -->
+  <section id="checklist" class="checklist-section animate-in" style="animation-delay:0.2s">
+    <div class="section-header">
+      <span class="section-number">02</span>
+      <h2>必做 Checklist</h2>
+    </div>
+
+    <div class="checklist-progress">
+      <div class="progress-bar-wrap">
+        <div class="progress-label">
+          <span>交付前检查完成度</span>
+          <span id="pct-label">0%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      </div>
+      <div class="progress-count"><span id="done-count">0</span> / <span id="total-count">0</span> <small>项</small></div>
+    </div>
+
+    <div class="checklist-group">
+      <div class="checklist-group-label critical">必做 — 直接影响代码结构</div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-text"><strong>Frame 替代 Group</strong>——所有有意义的分组使用容器 Frame，无 Group 节点</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-text"><strong>规律排列容器启用 Auto Layout</strong>——无绝对定位兜底</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-text"><strong>同一父容器子节点方向统一</strong>——横排或竖排，不混用；混排时拆出子容器</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-text"><strong>固定间距用 Gap，内部留白用 Padding</strong>——无拖拽位移实现间距</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-text"><strong>每个容器明确尺寸语义</strong>：Hug / Fill / Fixed 三选一，优先 Hug/Fill</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-text"><strong>样式集中到主体图层</strong>——无蒙层、叠层分散样式</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-text"><strong>需要滚动的容器设「裁剪超出内容」</strong></div>
+      </div>
+    </div>
+
+    <div class="checklist-group">
+      <div class="checklist-group-label rec">推荐 — 提升样式还原质量</div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-text"><strong>颜色和文字样式绑定 Design Token</strong>（目标覆盖率 &gt;80%）</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-text"><strong>图片 / 背景用容器填充属性</strong>，不用额外图片节点</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-text"><strong>蒙版改为容器裁剪</strong>（容器 + 裁剪超出内容）</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-text"><strong>删除隐藏图层</strong>和透明度 0% 图层</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-text"><strong>文本溢出使用缩略属性</strong>，不手动输入"..."</div>
+      </div>
+    </div>
+
+    <div class="checklist-group">
+      <div class="checklist-group-label adv">场景适用 — 组件库 / 高质量交付</div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-text"><strong>组件命名三层格式</strong>：ComponentName/Variant/State</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-text"><strong>使用标准组件实例</strong>（不拆散、不手改内部结构）</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-text"><strong>D2C 前确认所有元素为标准实例</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- TOOLS -->
+  <section id="tools" class="animate-in" style="animation-delay:0.3s">
+    <div class="section-header">
+      <span class="section-number">03</span>
+      <h2>工具直达</h2>
+    </div>
+    <div class="tool-direct">
+      <div class="tool-map">
+        <img src="assets/tool.png" alt="工具直达示意图">
+        <a
+          class="tool-hotspot"
+          href="https://friday.sankuai.com/skills/skill-detail?activeTab=overview&amp;activeTestTab=cases&amp;id=75815"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="打开 Skill:真机调试"
+          style="left:52%; top:83%; width:44%; height:13%;"
+        ></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="doc-footer">
+    <div class="footer-source">
+      资料来源：内部 KM 文章（2732066436 / 2742047585 / 2751500760）·
+      Figma Dev Mode 官方文档 · Locofy / Builder.io 规范 · 学术研究综合
+    </div>
+    <div>2026.05</div>
+  </footer>
+
+</div>
+
+<script>
+  function toggleCheck(item) {
+    item.classList.toggle('done');
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const all = document.querySelectorAll('.check-item');
+    const done = document.querySelectorAll('.check-item.done');
+    const total = all.length;
+    const count = done.length;
+    const pct = total > 0 ? Math.round(count / total * 100) : 0;
+
+    document.getElementById('done-count').textContent = count;
+    document.getElementById('total-count').textContent = total;
+    document.getElementById('pct-label').textContent = pct + '%';
+    document.getElementById('progress-fill').style.width = pct + '%';
+  }
+
+  // Init
+  document.addEventListener('DOMContentLoaded', () => {
+    updateProgress();
+    // Open first two cards by default
+    document.querySelectorAll('.dim-card').forEach((card, i) => {
+      if (i < 2) card.classList.add('open');
+    });
+  });
+</script>
+</body>
+</html>
