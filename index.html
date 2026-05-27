@@ -187,6 +187,9 @@
     border-radius: 10px;
     box-shadow: 0 24px 80px oklch(0% 0 0 / 0.35);
     background: var(--paper);
+    transform: scale(var(--lightbox-scale, 1));
+    transform-origin: center center;
+    transition: transform 0.12s ease-out;
   }
   .lightbox-close {
     position: absolute;
@@ -1168,11 +1171,17 @@
 
 	    const lightbox = document.getElementById('image-lightbox');
 	    const lightboxImage = lightbox.querySelector('img');
+	    let lightboxScale = 1;
+	    const setLightboxScale = (scale) => {
+	      lightboxScale = Math.min(4, Math.max(1, scale));
+	      lightbox.style.setProperty('--lightbox-scale', lightboxScale.toFixed(2));
+	    };
 	    const closeLightbox = () => {
 	      lightbox.classList.remove('open');
 	      lightbox.setAttribute('aria-hidden', 'true');
 	      lightboxImage.src = '';
 	      lightboxImage.alt = '';
+	      setLightboxScale(1);
 	      document.body.classList.remove('lightbox-open');
 	    };
 
@@ -1182,11 +1191,19 @@
 	        const image = link.querySelector('img');
 	        lightboxImage.src = link.href;
 	        lightboxImage.alt = image ? image.alt : '';
+	        setLightboxScale(1);
 	        lightbox.classList.add('open');
 	        lightbox.setAttribute('aria-hidden', 'false');
 	        document.body.classList.add('lightbox-open');
 	      });
 	    });
+
+	    lightbox.addEventListener('wheel', (event) => {
+	      if (!lightbox.classList.contains('open')) return;
+	      event.preventDefault();
+	      const zoomStep = event.deltaY < 0 ? 0.14 : -0.14;
+	      setLightboxScale(lightboxScale + zoomStep);
+	    }, { passive: false });
 
 	    lightbox.addEventListener('click', (event) => {
 	      if (event.target === lightbox || event.target.closest('.lightbox-close')) {
