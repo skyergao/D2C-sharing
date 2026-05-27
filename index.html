@@ -148,6 +148,18 @@
     color: var(--ink-4);
     line-height: 1.4;
   }
+  .preview-shot {
+    margin: 0 0 32px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--paper);
+  }
+  .preview-shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
   .formula-chain {
     display: flex;
     align-items: center;
@@ -671,6 +683,9 @@
         <div class="impact-text">采用 D2C 方法后，C 类页面可压缩至 1 天完成交付。</div>
       </div>
     </div>
+    <figure class="preview-shot" aria-label="D2C 案例效果图">
+      <img src="assets/案例测试-20260527.png" alt="D2C 案例测试效果图">
+    </figure>
     <div class="formula-block animate-in" style="animation-delay:0.1s">
       <p class="formula-label">核心公式</p>
       <p class="formula-eq">
