@@ -164,6 +164,44 @@
     width: 100%;
     height: auto;
   }
+  body.lightbox-open {
+    overflow: hidden;
+  }
+  .image-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    background: oklch(8% 0.02 250 / 0.72);
+  }
+  .image-lightbox.open {
+    display: flex;
+  }
+  .image-lightbox img {
+    display: block;
+    max-width: min(1200px, 94vw);
+    max-height: 90vh;
+    border-radius: 10px;
+    box-shadow: 0 24px 80px oklch(0% 0 0 / 0.35);
+    background: var(--paper);
+  }
+  .lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 36px;
+    height: 36px;
+    border: 1px solid oklch(100% 0 0 / 0.24);
+    border-radius: 999px;
+    background: oklch(100% 0 0 / 0.12);
+    color: white;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+  }
   .formula-chain {
     display: flex;
     align-items: center;
@@ -672,7 +710,7 @@
       <h2>效果预览</h2>
     </div>
     <figure class="preview-shot" aria-label="D2C 案例效果图">
-      <a href="assets/案例测试-20260527.png" target="_blank" rel="noopener">
+      <a href="assets/案例测试-20260527.png" data-lightbox="preview-shot">
         <img src="assets/案例测试-20260527.png" alt="D2C 案例测试效果图">
       </a>
     </figure>
@@ -1096,6 +1134,11 @@
 
 </div>
 
+<div class="image-lightbox" id="image-lightbox" aria-hidden="true">
+  <button class="lightbox-close" type="button" aria-label="关闭大图">×</button>
+  <img src="" alt="">
+</div>
+
 <script>
   function toggleCheck(item) {
     item.classList.toggle('done');
@@ -1116,13 +1159,47 @@
   }
 
   // Init
-  document.addEventListener('DOMContentLoaded', () => {
-    updateProgress();
-    // Open first two cards by default
-    document.querySelectorAll('.dim-card').forEach((card, i) => {
-      if (i < 2) card.classList.add('open');
-    });
-  });
-</script>
+	  document.addEventListener('DOMContentLoaded', () => {
+	    updateProgress();
+	    // Open first two cards by default
+	    document.querySelectorAll('.dim-card').forEach((card, i) => {
+	      if (i < 2) card.classList.add('open');
+	    });
+
+	    const lightbox = document.getElementById('image-lightbox');
+	    const lightboxImage = lightbox.querySelector('img');
+	    const closeLightbox = () => {
+	      lightbox.classList.remove('open');
+	      lightbox.setAttribute('aria-hidden', 'true');
+	      lightboxImage.src = '';
+	      lightboxImage.alt = '';
+	      document.body.classList.remove('lightbox-open');
+	    };
+
+	    document.querySelectorAll('[data-lightbox]').forEach((link) => {
+	      link.addEventListener('click', (event) => {
+	        event.preventDefault();
+	        const image = link.querySelector('img');
+	        lightboxImage.src = link.href;
+	        lightboxImage.alt = image ? image.alt : '';
+	        lightbox.classList.add('open');
+	        lightbox.setAttribute('aria-hidden', 'false');
+	        document.body.classList.add('lightbox-open');
+	      });
+	    });
+
+	    lightbox.addEventListener('click', (event) => {
+	      if (event.target === lightbox || event.target.closest('.lightbox-close')) {
+	        closeLightbox();
+	      }
+	    });
+
+	    document.addEventListener('keydown', (event) => {
+	      if (event.key === 'Escape' && lightbox.classList.contains('open')) {
+	        closeLightbox();
+	      }
+	    });
+	  });
+	</script>
 </body>
 </html>
